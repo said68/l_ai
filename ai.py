@@ -1,5 +1,3 @@
-# prototype
-
 import openai
 import streamlit as st
 import json
@@ -13,16 +11,12 @@ api_key = st.secrets["OPENAI_API_KEY"]
 
 
 def log_to_file(log_message, filename="log.txt"):
-    # Get the current directory
     current_directory = os.path.dirname(os.path.abspath(__file__))
-
-    # Create or open the log file in append mode
     log_file_path = os.path.join(current_directory, filename)
     with open(log_file_path, "a") as log_file:
         log_file.write(log_message + "\n")
 
 
-# Define functions to interact with the JSON file
 def load_settings():
     try:
         with open("settings.json", "r") as file:
@@ -36,7 +30,6 @@ def save_settings(settings):
         json.dump(settings, file, indent=4)
 
 
-# Load settings or use default values if not found
 settings = load_settings()
 
 show_token_cost_default = settings.get("show_token_cost", False)
@@ -44,8 +37,7 @@ temperature_default = settings.get("temperature", 0.7)
 top_p_default = settings.get("top_p", 1.0)
 model_default = settings.get("model", "gpt-3.5-turbo")
 
-# Sidebar settings
-st.sidebar.header("Paramètres")
+st.sidebar.markdown("<span style='color: blue; font-weight: bold; font-size: 20px;'>Paramètres :</span>", unsafe_allow_html=True)
 
 show_token_cost = True
 
@@ -55,7 +47,11 @@ model = st.sidebar.selectbox(
     "Modèle",
     ["gpt-3.5-turbo", "gpt-3.5-turbo-16k"],
     index=0 if model_default == "gpt-3.5-turbo" else 1,
-)
+    )
+st.sidebar.markdown("<span style='color: blue;'>**Des fonctions spéciales à cocher au besoin :**</span>", unsafe_allow_html=True)
+activate_summary = st.sidebar.checkbox("Résumé d'une page URL")
+activate_rewrite = st.sidebar.checkbox("Réécriture d'un texte en angalais")
+activate_google = st.sidebar.checkbox("Recherche d'un sujet sur Google")
 
 # Update settings with the new values
 settings.update(
@@ -69,9 +65,12 @@ settings.update(
 save_settings(settings)
 
 
-if "cumulative_tokens" not in st.session_state:
+# Initialisation ou récupération de l'état de la session
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+if 'cumulative_tokens' not in st.session_state:
     st.session_state.cumulative_tokens = 0
-if "cumulative_cost" not in st.session_state:
+if 'cumulative_cost' not in st.session_state:
     st.session_state.cumulative_cost = 0
 
 
@@ -93,26 +92,12 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-
 if prompt := st.chat_input("Comment puis-je vous aider?"):
     start_prompt_used = ""
 
-    # Check for "reset" command from user
-    if prompt.strip().lower() == "/reset":
-        st.session_state.messages = []  # Clear the conversation
-        st.session_state.cumulative_tokens = 0  # Reset cumulative tokens
-        st.session_state.cumulative_cost = 0  # Reset cumulative cost
-        st.sidebar.markdown(
-            f"**Total des 'tockens' utilisés de cette session:** {st.session_state.cumulative_tokens}"
-        )
-        st.sidebar.markdown(
-            f"**Coût total de cette session : ** ${st.session_state.cumulative_cost:.2f}"
-        )
-        st.write("La conversation et les compteurs ont été réinitialisés!")
-        st.stop()  # Halts further execution for this run of the app
-
-    if prompt.strip().lower().startswith("/summarize"):
-        blog_url = prompt.split(" ", 1)[1].strip()
+    # Traitement des commandes spécifiques
+    if activate_summary and (prompt.startswith("http://") or prompt.startswith("https://")):
+        blog_url = prompt
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             message_placeholder.markdown("Résumer : " + blog_url)
@@ -140,7 +125,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
                 {"role": "assistant", "content": blog_summary}
             )
 
-    elif prompt.strip().lower().startswith("/rewrite"):
+    elif activate_rewrite:
         input_text = prompt.split(" ", 1)[1].strip()
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
@@ -167,7 +152,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
                 {"role": "assistant", "content": new_written_text}
             )
 
-    elif prompt.strip().lower().startswith("/google"):
+    elif activate_google:
         input_query = prompt.split(" ", 1)[1].strip()
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
@@ -258,6 +243,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
                 {"role": "assistant", "content": full_response}
             )
 
+    # Gestion des coûts des tokens si activée
     if show_token_cost:
         total_tokens_used = tc.count_tokens(start_prompt_used, model)
         total_cost = tc.estimate_input_cost_optimized(
