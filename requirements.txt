@@ -1,0 +1,9 @@
+beautifulsoup4
+langchain
+newspaper3k
+openai
+Requests
+selenium
+selenium_stealth
+streamlit
+tiktoken
