@@ -6,18 +6,21 @@ import prompts
 import bp
 import tc
 import os
-import asyncio
 
 api_key = st.secrets["OPENAI_API_KEY"]
 
 
 def log_to_file(log_message, filename="log.txt"):
+    # Get the current directory
     current_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Create or open the log file in append mode
     log_file_path = os.path.join(current_directory, filename)
     with open(log_file_path, "a") as log_file:
         log_file.write(log_message + "\n")
 
 
+# Define functions to interact with the JSON file
 def load_settings():
     try:
         with open("settings.json", "r") as file:
@@ -31,6 +34,7 @@ def save_settings(settings):
         json.dump(settings, file, indent=4)
 
 
+# Load settings or use default values if not found
 settings = load_settings()
 
 show_token_cost_default = settings.get("show_token_cost", False)
@@ -38,6 +42,8 @@ temperature_default = settings.get("temperature", 0.7)
 top_p_default = settings.get("top_p", 1.0)
 model_default = settings.get("model", "gpt-3.5-turbo")
 
+# Sidebar settings
+#st.sidebar.header("Paramètres")
 st.sidebar.markdown("<span style='color: blue; font-weight: bold; font-size: 20px;'>Paramètres :</span>", unsafe_allow_html=True)
 
 show_token_cost = True
@@ -51,7 +57,8 @@ model = st.sidebar.selectbox(
     )
 st.sidebar.markdown("<span style='color: blue;'>**Des fonctions spéciales à cocher au besoin :**</span>", unsafe_allow_html=True)
 activate_summary = st.sidebar.checkbox("Résumé d'une page URL")
-activate_rewrite = st.sidebar.checkbox("Réécriture d'un texte en anglais")
+activate_rewrite = st.sidebar.checkbox("Réécriture d'un texte en angalais")
+activate_google = st.sidebar.checkbox("Recherche d'un sujet sur Google")
 
 # Update settings with the new values
 settings.update(
@@ -152,13 +159,71 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
                 {"role": "assistant", "content": new_written_text}
             )
 
-            
-            message_placeholder.markdown("Résumé des articles trouvés :")
-            message_placeholder.markdown(over_all_summary)
-            message_placeholder.markdown("Sources :" + source_links)
+    elif activate_google:
+        input_query = prompt.split(" ", 1)[1].strip()
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            message_placeholder.markdown(
+                "Recherche Google pour : " + input_query + " ..."
+            )
+            search_results = gs.search_google_web_automation(input_query)
+            over_all_summary = ""
 
+            source_links = "\n \n Sources: \n \n"
 
-    with st.chat_message("assistant"):
+            for result in search_results:
+                blog_url = result["url"]
+                source_links += blog_url + "\n \n"
+                message_placeholder.markdown(f"Recherche terminée, lecture {blog_url}")
+                blog_summary_prompt = bp.get_blog_summary_prompt(blog_url)
+                response_obj = openai.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": blog_summary_prompt}],
+                    temperature=temperature,
+                    top_p=top_p,
+                    stream=True,
+                )
+
+                blog_summary = ""
+                for response in response_obj:
+                    if response.choices[0].delta.content is not None:
+                        blog_summary += response.choices[0].delta.content
+
+                over_all_summary = over_all_summary + blog_summary
+                start_prompt_used = blog_summary_prompt + blog_summary
+
+            message_placeholder.markdown(f"Génération finale du rapport de recherche...")
+
+            new_search_prompt = prompts.google_search_prompt.format(
+                input=over_all_summary
+            )
+
+            response_obj = openai.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": new_search_prompt}],
+                temperature=temperature,
+                top_p=top_p,
+                stream=True,
+            )
+            research_final = ""
+            for response in response_obj:
+                if response.choices[0].delta.content is not None:
+                    research_final += response.choices[0].delta.content
+                message_placeholder.markdown(research_final + "▌")
+
+            start_prompt_used = start_prompt_used + new_search_prompt + research_final
+
+            message_placeholder.markdown(research_final + source_links)
+            st.session_state.messages.append(
+                {"role": "assistant", "content": research_final + source_links}
+            )
+
+    else:
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        with st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
             response_obj = openai.chat.completions.create(
