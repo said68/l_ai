@@ -14,19 +14,19 @@ def setup_driver():
     """Configure et retourne un WebDriver en mode sans tête."""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")  # Ajout pour éviter les problèmes dans certains environnements
-    chrome_options.add_argument("--disable-dev-shm-usage")  # Idem, pour les environnements avec peu de mémoire
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     return driver
 
-def fetch_google_search_results(query):
+def search_google_web_automation(query):
     """Effectue une recherche Google et extrait les trois premiers résultats."""
     driver = setup_driver()
     results = []
     try:
         driver.get(f"https://www.google.com/search?q={query}")
         soup = BeautifulSoup(driver.page_source, 'html.parser')
-        search_items = soup.find_all('div', class_='tF2Cxc', limit=3)  # Modification pour limiter à 3 résultats
+        search_items = soup.find_all('div', class_='tF2Cxc', limit=3)
 
         for item in search_items:
             title = item.find('h3').text if item.find('h3') else 'No Title'
