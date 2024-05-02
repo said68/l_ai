@@ -8,3 +8,4 @@ selenium_stealth
 streamlit
 tiktoken
 lxml_html_clean
+webdriver_manager
