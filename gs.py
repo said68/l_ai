@@ -1,51 +1,32 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
+import asyncio
+from pyppeteer import launch
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
-import requests
-import logging
 
-# Configuration des logs
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+async def fetch_url(url):
+    """Launches a headless browser and fetches the page content for the given URL."""
+    browser = await launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+    page = await browser.newPage()
+    await page.goto(url)
+    content = await page.content()
+    await browser.close()
+    return content
 
-def setup_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    return driver
-
-def search_google_web_automation(query):
-    """Effectue une recherche Google et extrait les trois premiers résultats."""
-    driver = setup_driver()
+def get_google_search_results(query):
+    """Perform a Google search and return the first three result URLs."""
+    search_url = f"https://www.google.com/search?q={query}"
+    # This runs our async function in a sync manner for simplicity in integration
+    content = asyncio.get_event_loop().run_until_complete(fetch_url(search_url))
+    soup = BeautifulSoup(content, 'html.parser')
     results = []
-    try:
-        driver.get(f"https://www.google.com/search?q={query}")
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        search_items = soup.find_all('div', class_='tF2Cxc', limit=3)
-
-        for item in search_items:
-            title = item.find('h3').text if item.find('h3') else 'No Title'
-            link = item.find('a')['href']
-            results.append({"title": title, "url": link})
-    except Exception as e:
-        logging.error(f"Error during web search: {e}")
-    finally:
-        driver.quit()
+    for item in soup.select('.tF2Cxc')[:3]:  # We limit to the first 3 results
+        title = item.select_one('h3').text if item.select_one('h3') else 'No title'
+        link = item.select_one('a')['href']
+        results.append({'title': title, 'url': link})
     return results
 
 def get_summary_from_url(url):
-    """Extrait un résumé du contenu de l'URL spécifiée."""
-    try:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        text = ' '.join(p.text for p in soup.find_all('p'))
-        return text[:500]  # Retourne les 500 premiers caractères pour simplifier
-    except Exception as e:
-        logging.error(f"Error fetching summary from {url}: {e}")
-        return "Failed to retrieve content"
+    """Fetch the URL content and return a simple summary (first 500 characters)."""
+    content = asyncio.get_event_loop().run_until_complete(fetch_url(url))
+    soup = BeautifulSoup(content, 'html.parser')
+    text = ' '.join(p.text for p in soup.find_all('p'))
+    return text[:500]  # Return the first 500 characters as a summary
