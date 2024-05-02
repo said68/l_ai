@@ -58,7 +58,6 @@ model = st.sidebar.selectbox(
 st.sidebar.markdown("<span style='color: blue;'>**Des fonctions spéciales à cocher au besoin :**</span>", unsafe_allow_html=True)
 activate_summary = st.sidebar.checkbox("Résumé d'une page URL")
 activate_rewrite = st.sidebar.checkbox("Réécriture d'un texte en angalais")
-activate_google = st.sidebar.checkbox("Recherche d'un sujet sur Google")
 
 # Update settings with the new values
 settings.update(
