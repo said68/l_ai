@@ -1,7 +1,7 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import requests
@@ -12,11 +12,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def setup_driver():
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    # Spécifiez explicitement la version du ChromeDriver si nécessaire
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="95.0.4638.69").install()), options=chrome_options)
+    chrome_options.add_argument("--headless")  # Run headless Chrome
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
+
+    # Setup WebDriver with the correct version of ChromeDriver
+    try:
+        # Use the latest version of ChromeDriver
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    except Exception as e:
+        print(f"Failed to set up WebDriver: {e}")
+        raise
+
     return driver
 
 def search_google_web_automation(query):
