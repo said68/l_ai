@@ -157,65 +157,20 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
         input_query = parts[1].strip() if len(parts) > 1 else ""
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
-            message_placeholder.markdown(
-                "Recherche Google pour : " + input_query + " ..."
-            )
+            message_placeholder.markdown("Recherche Google pour : " + input_query + " ...")
             search_results = gs.search_google_web_automation(input_query)
             over_all_summary = ""
-
-            source_links = "\n \n Sources: \n \n"
-
+    
+            source_links = "\n\nSources:\n\n"
             for result in search_results:
-                blog_url = result["url"]
-                source_links += blog_url + "\n \n"
-                message_placeholder.markdown(f"Recherche terminée, lecture {blog_url}")
-                blog_summary_prompt = bp.get_blog_summary_prompt(blog_url)
-                response_obj = openai.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": blog_summary_prompt}],
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=True,
-                )
-
-                blog_summary = ""
-                for response in response_obj:
-                    if response.choices[0].delta.content is not None:
-                        blog_summary += response.choices[0].delta.content
-
-                over_all_summary = over_all_summary + blog_summary
-                start_prompt_used = blog_summary_prompt + blog_summary
-
-            message_placeholder.markdown(f"Génération finale du rapport de recherche...")
-
-            new_search_prompt = prompts.google_search_prompt.format(
-                input=over_all_summary
-            )
-
-            response_obj = openai.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": new_search_prompt}],
-                temperature=temperature,
-                top_p=top_p,
-                stream=True,
-            )
-            research_final = ""
-            for response in response_obj:
-                if response.choices[0].delta.content is not None:
-                    research_final += response.choices[0].delta.content
-                message_placeholder.markdown(research_final + "▌")
-
-            start_prompt_used = start_prompt_used + new_search_prompt + research_final
-
-            message_placeholder.markdown(research_final + source_links)
-            st.session_state.messages.append(
-                {"role": "assistant", "content": research_final + source_links}
-            )
-
-    else:
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+                url = result['url']
+                source_links += url + "\n\n"
+                summary = gs.get_summary_from_url(url)
+                over_all_summary += summary + "\n\n"
+            
+            message_placeholder.markdown("Résumé des articles trouvés :")
+            message_placeholder.markdown(over_all_summary)
+            message_placeholder.markdown("Sources :" + source_links)
 
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
