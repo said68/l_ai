@@ -3,30 +3,39 @@ from pyppeteer import launch
 from bs4 import BeautifulSoup
 
 async def fetch_url(url):
-    """Launches a headless browser and fetches the page content for the given URL."""
-    # Disable signal handling by Pyppeteer
-    browser = await launch(
-        headless=True,
-        args=['--no-sandbox', '--disable-setuid-sandbox'],
-        handleSIGINT=False,
-        handleSIGTERM=False,
-        handleSIGHUP=False
-    )
-    page = await browser.newPage()
-    await page.goto(url)
-    content = await page.content()
-    await browser.close()
-    return content
+    try:
+        browser = await launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',  # May be necessary in Docker or cloud environments
+            ],
+            handleSIGINT=False,
+            handleSIGTERM=False,
+            handleSIGHUP=False,
+            autoClose=True,  # Ensure browser closes properly on script completion
+            dumpio=True  # Enable logging for Chromium process for diagnostics
+        )
+        page = await browser.newPage()
+        await page.goto(url, {'timeout': 60000})  # Extended timeout for loading the page
+        content = await page.content()
+        await browser.close()
+        return content
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return ""
 
 def get_google_search_results(query):
-    """Perform a Google search and return the first three result URLs."""
     search_url = f"https://www.google.com/search?q={query}"
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:  # This should not happen but better safe than sorry
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    loop = asyncio.get_event_loop()
     content = loop.run_until_complete(fetch_url(search_url))
+    if not content:
+        return []  # Return an empty list if no content was fetched
     soup = BeautifulSoup(content, 'html.parser')
     results = []
     for item in soup.select('.tF2Cxc')[:3]:  # Limit to the first 3 results
