@@ -153,26 +153,6 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
                 {"role": "assistant", "content": new_written_text}
             )
 
-    elif activate_google:
-        parts = prompt.split(" ", 1)
-        parts = prompt.split(" ", 1)
-        input_query = parts[1].strip() if len(parts) > 1 else ""
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            message_placeholder.markdown("Recherche Google pour : " + input_query + " ...")
-
-            # Await the coroutine to get search results
-            search_results = await gs.get_google_search_results(input_query)
-            
-            over_all_summary = ""
-            source_links = "\n\nSources:\n\n"
-            
-            # Iterate over the search results after awaiting the coroutine
-            for result in search_results:
-                url = result['url']
-                source_links += url + "\n\n"
-                summary = gs.get_summary_from_url(url)
-                over_all_summary += summary + "\n\n"
             
             message_placeholder.markdown("Résumé des articles trouvés :")
             message_placeholder.markdown(over_all_summary)
