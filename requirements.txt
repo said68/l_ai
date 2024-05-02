@@ -1,11 +1,11 @@
-beautifulsoup4
+selenium==4.1.0
+webdriver_manager==3.5.2
+beautifulsoup4==4.10.0
 langchain
 newspaper3k
 openai
 Requests
-selenium
 selenium_stealth
 streamlit
 tiktoken
 lxml_html_clean
-webdriver_manager==3.5.2
