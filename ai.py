@@ -155,6 +155,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
 
     elif activate_google:
         parts = prompt.split(" ", 1)
+        parts = prompt.split(" ", 1)
         input_query = parts[1].strip() if len(parts) > 1 else ""
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
