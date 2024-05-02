@@ -159,7 +159,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
             message_placeholder.markdown("Sources :" + source_links)
 
 
-        with st.chat_message("assistant"):
+        elif st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
             response_obj = openai.chat.completions.create(
