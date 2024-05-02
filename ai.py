@@ -52,7 +52,6 @@ model = st.sidebar.selectbox(
 st.sidebar.markdown("<span style='color: blue;'>**Des fonctions spéciales à cocher au besoin :**</span>", unsafe_allow_html=True)
 activate_summary = st.sidebar.checkbox("Résumé d'une page URL")
 activate_rewrite = st.sidebar.checkbox("Réécriture d'un texte en anglais")
-activate_google = st.sidebar.checkbox("Recherche d'un sujet sur Google")
 
 # Update settings with the new values
 settings.update(
@@ -159,7 +158,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
             message_placeholder.markdown("Sources :" + source_links)
 
 
-        elif st.chat_message("assistant"):
+    with st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
             response_obj = openai.chat.completions.create(
