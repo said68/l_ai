@@ -160,7 +160,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             message_placeholder.markdown("Recherche Google pour : " + input_query + " ...")
-            
+
             # Await the coroutine to get search results
             search_results = await gs.get_google_search_results(input_query)
             
@@ -168,7 +168,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
             source_links = "\n\nSources:\n\n"
             
             # Iterate over the search results after awaiting the coroutine
-            async for result in search_results:
+            for result in search_results:
                 url = result['url']
                 source_links += url + "\n\n"
                 summary = gs.get_summary_from_url(url)
@@ -177,6 +177,7 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
             message_placeholder.markdown("Résumé des articles trouvés :")
             message_placeholder.markdown(over_all_summary)
             message_placeholder.markdown("Sources :" + source_links)
+
 
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
