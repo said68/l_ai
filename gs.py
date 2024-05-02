@@ -1,6 +1,8 @@
 import asyncio
 from pyppeteer import launch
 from bs4 import BeautifulSoup
+import uvloop
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 async def fetch_url(url):
     try:
