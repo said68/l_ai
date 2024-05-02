@@ -11,12 +11,12 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def setup_driver():
-    """Configure et retourne un WebDriver en mode sans tête."""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    # Spécifiez explicitement la version du ChromeDriver si nécessaire
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="95.0.4638.69").install()), options=chrome_options)
     return driver
 
 def search_google_web_automation(query):
