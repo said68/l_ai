@@ -1,34 +1,58 @@
-import asyncio
+
+from selenium import webdriver
+from selenium_stealth import stealth
 from bs4 import BeautifulSoup
-from pyppeteer import launch
+from urllib.parse import urlparse
+import requests
+import json
+import os
+from selenium.webdriver.chrome.options import Options
 
-async def fetch_url(url):
-    """Launches a headless browser and fetches the page content for the given URL."""
-    browser = await launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-    page = await browser.newPage()
-    await page.goto(url)
-    content = await page.content()
-    await browser.close()
-    return content
 
-async def get_google_search_results(query):
-    """Performs a Google search and returns the first three result URLs."""
-    search_url = f"https://www.google.com/search?q={query}"
-    content = await fetch_url(search_url)
-    soup = BeautifulSoup(content, 'html.parser')
+def search_google_web_automation(query):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option("useAutomationExtension", False)
+    driver = webdriver.Chrome(options=chrome_options)
+
+    stealth(
+        driver,
+        languages=["en-US", "en"],
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True,
+    )
+
+    n_pages = 2
     results = []
-    for item in soup.select('.tF2Cxc')[:3]:
-        url = item.find('a')['href']
-        results.append(url)
-    return results
+    counter = 0
+    for page in range(1, n_pages):
+        url = (
+            "http://www.google.com/search?q="
+            + str(query)
+            + "&start="
+            + str((page - 1) * 10)
+        )
 
-# Example usage:
-async def main():
-    query = "your_search_query_here"
-    search_results = await get_google_search_results(query)
-    print("Search Results:")
-    for url in search_results:
-        print(url)
+        driver.get(url)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        search = soup.find_all("div", class_="yuRUbf")
+        for h in search:
+            counter = counter + 1
+            title = h.a.h3.text
+            link = h.a.get("href")
+            rank = counter
+            results.append(
+                {
+                    "title": h.a.h3.text,
+                    "url": link,
+                    "domain": urlparse(link).netloc,
+                    "rank": rank,
+                }
+            )
+    return results[:3]
 
-if __name__ == "__main__":
-    asyncio.run(main())
+
