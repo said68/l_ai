@@ -155,10 +155,13 @@ if prompt := st.chat_input("Comment puis-je vous aider?"):
     elif activate_google:
         parts = prompt.split(" ", 1)
         input_query = parts[1].strip() if len(parts) > 1 else ""
+    
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
-            message_placeholder.markdown("Recherche Google pour : " + input_query + " ...")
-            search_results = gs.search_google_web_automation(input_query)
+            message_placeholder.markdown("Recherche Google pour : " + input_query + "...")
+    
+            # Fetch search results
+            search_results = gs.get_google_search_results(input_query)
             over_all_summary = ""
     
             source_links = "\n\nSources:\n\n"
